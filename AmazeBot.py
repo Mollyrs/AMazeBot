@@ -1,17 +1,73 @@
 import random
+import numpy as np
+
 from deap import base, creator, tools
+
+class board:
+    b = np.array([
+        [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [ 1,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [ 1,  1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [ 1,  1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+        [ 1,  0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1],
+        [ 1,  0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+        [ 1,  0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+        [ 1,  1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1],
+        [ 1,  1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
+        [ 1,  1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1],
+        [ 1, -1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1],
+        [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]) #y axis and x axis are flipped. -1 is located at b[10,1]
+
+    def coordinates(self,x,y):
+        return board.b[x,y]
+
+
 
 def eval_func(individual):
    target_location_x = 10
-   target_location_y = 10
-   distance = abs(individual.count(1) - individual.count(2) - target_location_y) + abs(individual.count(3) - individual.count(4) - target_location_y)
-   return len(individual) - distance
+   target_location_y = 1
+   start_location_x = 1
+   start_location_y = 1
+
+   current_location_x = 1
+   current_location_y = 1
+   penalty = 0
+   lasti = 6
+
+   for i in individual:   
+        if i==0: 
+            current_location_y = current_location_y-1
+            if lasti==1:
+                penalty = penalty+1
+        if i==1:
+            current_location_y = current_location_y+1
+            if lasti==0:
+                penalty = penalty+1
+        if i==2:
+            current_location_x = current_location_x-1
+            if lasti==3:
+                penalty = penalty+1
+        if i==3:
+            current_location_x = current_location_x+1
+            if lasti==2:
+                penalty = penalty+1
+
+        if current_location_x > 11 or current_location_y > 11 or current_location_x < 0 or current_location_y < 0:
+            penalty = penalty + 2
+        elif board.coordinates(i,current_location_x,current_location_y) == 1:
+            penalty = penalty + 2
+        lasti = i
+
+   distance = abs(individual.count(1) - individual.count(0) - target_location_y + 1) + abs(individual.count(3) - individual.count(2) - target_location_x + 1) 
+
+   return len(individual) - distance - penalty
+
 
 def create_toolbox(num_bits):
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
     toolbox = base.Toolbox()
-    toolbox.register("attr_bool", random.randint, 0, 4)
+    toolbox.register("attr_bool", random.randint, 0, 3)
     toolbox.register("individual", tools.initRepeat, creator.Individual,toolbox.attr_bool, num_bits)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("evaluate", eval_func)
@@ -21,12 +77,12 @@ def create_toolbox(num_bits):
     return toolbox
 
 if __name__ == "__main__":
-    num_bits = 50
+    num_bits = 100
     toolbox = create_toolbox(num_bits)
     random.seed(7)
-    population = toolbox.population(n = 500)
-    probab_crossing, probab_mutating = 0.5, 0.2
-    num_generations = 2
+    population = toolbox.population(n = 300000)
+    probab_crossing, probab_mutating = 0.7, 0.5
+    num_generations = 500
     print('\nEvolution process starts')
     fitnesses = list(map(toolbox.evaluate, population))
     for ind, fit in zip(population, fitnesses):
